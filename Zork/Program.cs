@@ -12,7 +12,7 @@ namespace Zork
             Commands command = Commands.UNKNOWN;
             while (command != Commands.QUIT) 
             {
-                Console.WriteLine(Rooms[Location]);
+                Console.WriteLine(Rooms[Location.Row, Location.Column]);
                 Console.Write("> ");
                 command = ToCommand(Console.ReadLine().Trim());
 
@@ -54,12 +54,20 @@ namespace Zork
 
             switch (command) 
             {
-                case Commands.EAST when Location < Rooms.GetLength(0) - 1:
-                    Location++;
+                case Commands.EAST when Location.Column < Rooms.GetLength(1) - 1:
+                    Location.Column++;
                     break;
 
-                case Commands.WEST when Location > 0:
-                    Location--;
+                case Commands.WEST when Location.Column > 0:
+                    Location.Column--;
+                    break;
+
+                case Commands.NORTH when Location.Row > 0:
+                    Location.Row--;
+                    break;
+
+                case Commands.SOUTH when Location.Row < Rooms.GetLength(0) - 1:
+                    Location.Row++;
                     break;
 
                 default:
@@ -74,7 +82,11 @@ namespace Zork
 
         private static bool IsDirection(Commands command) => Directions.Contains(command);
 
-        private static readonly string[] Rooms = { "Forest", "West Of House", "Behind House", "Clearing", "Canyon View" };
+        private static readonly string[,] Rooms = {
+            { "Rocky Trail", "South of House", "Canyon View" },
+            { "Forest", "West Of House", "Behind House" },
+            { "Dense Woods", "North of House", "Clearing" }
+        };
 
         private static readonly List<Commands> Directions = new List<Commands>
         {
@@ -84,6 +96,6 @@ namespace Zork
             Commands.EAST
         };
 
-        private static int Location = 1;
+        private static (int Row, int Column) Location = (1, 1);
     }
 }
