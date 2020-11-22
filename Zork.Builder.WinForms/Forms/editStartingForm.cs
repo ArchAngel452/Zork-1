@@ -8,11 +8,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Zork.Builder.WinForms
+namespace Zork.Builder.WinForms.Forms
 {
-    public partial class mainForm : Form
+    public partial class editStartingForm : Form
     {
-        public mainForm()
+        public editStartingForm()
         {
             InitializeComponent();
         }
