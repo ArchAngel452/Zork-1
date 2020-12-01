@@ -26,6 +26,7 @@ public class GameManager : MonoBehaviour
     private void Update()
     {
         LocationText.text = Game.Instance.Player.Location.ToString();
+        ScoreText.text = "Score: " + Game.Instance.Player.Score.ToString();
         MoveText.text = "Moves: " + Game.Instance.Player.Moves.ToString();
     }
 }
