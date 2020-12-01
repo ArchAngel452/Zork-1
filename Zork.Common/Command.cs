@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
 
 namespace Zork
@@ -18,21 +17,21 @@ namespace Zork
         {
         }
 
-        public Command(string name, IEnumerable<string> verbs, Action<Game, CommandContext> action) 
+        public Command(string name, IEnumerable<string> verbs, Action<Game, CommandContext> action)
         {
             Name = name;
             Verbs = verbs.ToArray();
             Action = action;
         }
 
-        public static bool operator ==(Command lhs, Command rhs) 
-        { 
-            if (ReferenceEquals(lhs, rhs)) 
+        public static bool operator ==(Command lhs, Command rhs)
+        {
+            if (ReferenceEquals(lhs, rhs))
             {
                 return true;
             }
 
-            if (lhs is null || rhs is null) 
+            if (lhs is null || rhs is null)
             {
                 return false;
             }
@@ -51,3 +50,4 @@ namespace Zork
         public override string ToString() => Name;
     }
 }
+

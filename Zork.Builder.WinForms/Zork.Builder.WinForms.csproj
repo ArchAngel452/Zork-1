@@ -110,7 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zork.Common\Zork.Common.csproj">
-      <Project>{79cd56fe-71e0-40af-b2a1-b4cb7fbf09ac}</Project>
+      <Project>{495bf434-336b-470c-837f-08e9bdba4c7c}</Project>
       <Name>Zork.Common</Name>
     </ProjectReference>
   </ItemGroup>

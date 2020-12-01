@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Zork
+﻿namespace Zork
 {
     public struct CommandContext
     {
@@ -10,10 +6,13 @@ namespace Zork
 
         public Command Command { get; }
 
-        public CommandContext(string commandString, Command command) 
+        public CommandContext(string commandString, Command command)
         {
             CommandString = commandString;
             Command = command;
         }
     }
 }
+
+
+

@@ -1,18 +1,25 @@
 ﻿using System;
 using System.IO;
-using Newtonsoft.Json;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Scripting;
+using System.ComponentModel;
+using Newtonsoft.Json;
+//using Microsoft.CodeAnalysis.CSharp.Scripting;
+//using Microsoft.CodeAnalysis.Scripting;
 
 namespace Zork
 {
-    public class Game
+    public class Game : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         [JsonIgnore]
         public static Game Instance { get; private set; }
+
+        public string Name { get; set; }
+
+        public string WelcomeMessage { get; set; }
 
         public World World { get; set; }
 
@@ -20,12 +27,18 @@ namespace Zork
         public Player Player { get; private set; }
 
         [JsonIgnore]
-        public bool IsRunning { get; }
-
-        [JsonIgnore]
         public CommandManager CommandManager { get; }
 
-        public Game (World world, Player player) 
+        [JsonIgnore]
+        public bool IsRunning { get; private set; }
+
+        [JsonIgnore]
+        public IInputService Input { get; private set; }
+
+        [JsonIgnore]
+        public IOutputService Output { get; private set; }
+
+        public Game(World world, Player player)
         {
             World = world;
             Player = player;
@@ -33,48 +46,79 @@ namespace Zork
 
         public Game() => CommandManager = new CommandManager();
 
-        public static void Start(string gameFilename) 
+        public static void StartFromFile(string gameFilename, IInputService input, IOutputService output) 
         { 
             if (!File.Exists(gameFilename)) 
             {
                 throw new FileNotFoundException("Expected file.", gameFilename);
             }
 
-            while (Instance == null || Instance.mIsRestarting) 
-            {
-                Instance = Load(gameFilename);
-                Instance.LoadCommands();
-                Instance.LoadScripts();
-                Instance.DisplayWelcomeMessage();
-                Instance.Run();
-            }
+            Start(File.ReadAllText(gameFilename), input, output);
+        }
+        
+
+        public static void Start(string gameJsonString, IInputService input, IOutputService output)
+        {
+            Instance = Load(gameJsonString);
+            Instance.Input = input;
+            Instance.Output = output;
+            Instance.LoadCommands();
+            //Instance.LoadScripts();
+            Instance.DisplayWelcomeMessage();
+            Instance.IsRunning = true;
+            Instance.Input.InputReceived += Instance.InputReceivedHandler;
         }
 
-        private void Run() 
+        private void InputReceivedHandler(object sender, string inputString)
         {
-            mIsRunning = true;
-            Room previousRoom = null;
-            while (mIsRunning) 
+            Room previousRoom = Player.Location;
+            if (CommandManager.PerformCommand(this, inputString.Trim()))
             {
-                if (previousRoom != Player.Location) 
+                Player.Moves++;
+
+
+                if (previousRoom != Player.Location)
                 {
                     CommandManager.PerformCommand(this, "LOOK");
-                    previousRoom = Player.Location;
                 }
-
-                Console.Write("\n> ");
-                if (CommandManager.PerformCommand(this, Console.ReadLine().Trim())) 
-                {
-                    Player.Moves++;
-                }
-                else 
-                {
-                    Console.WriteLine("That's not a verb I recognize.");
-                }
+            }
+            else
+            {
+                Output.WriteLine("That's not a verb I recognize.");
             }
         }
 
-        private void LoadCommands() 
+        public void Restart()
+        {
+            IsRunning = false;
+            mIsRestarting = true;
+            Console.Clear();
+        }
+
+        public void Quit() => IsRunning = false;
+
+        public static Game Load(string jsonString)
+        {
+            Game game = JsonConvert.DeserializeObject<Game>(jsonString);
+            game.Player = game.World.SpawnPlayer();
+
+            return game;
+        }
+
+        public void Save(string filename)
+        {
+            JsonSerializer serializer = new JsonSerializer
+            {
+                Formatting = Formatting.Indented
+            };
+            using (StreamWriter streamWriter = new StreamWriter(filename))
+            using (JsonWriter jsonWriter = new JsonTextWriter(streamWriter))
+            {
+                serializer.Serialize(jsonWriter, this);
+            }
+        }
+
+        private void LoadCommands()
         {
             var commandMethods = (from type in Assembly.GetExecutingAssembly().GetTypes()
                                   from method in type.GetMethods()
@@ -82,83 +126,64 @@ namespace Zork
                                   where type.IsClass && type.GetCustomAttribute<CommandClassAttribute>() != null
                                   where attribute != null
                                   select new Command(attribute.CommandName, attribute.Verbs,
-                                  (Action<Game, CommandContext>)Delegate.CreateDelegate(typeof(Action<Game, CommandContext>), method)));
+                                  (Action<Game, CommandContext>)Delegate.CreateDelegate(typeof(Action<Game, CommandContext>),
+                                  method)));
 
             CommandManager.AddCommands(commandMethods);
         }
 
-        public void Restart() 
+//        private void LoadScripts()
+//        {
+//            foreach (string file in Directory.EnumerateFiles(ScriptDirectory, ScriptFileExtension))
+//            {
+//                try
+//                {
+//                    var scriptOptions = ScriptOptions.Default.AddReferences(Assembly.GetExecutingAssembly());
+//#if DEBUG
+//                    scriptOptions = scriptOptions.WithEmitDebugInformation(true)
+//                                    .WithFilePath(new FileInfo(file).FullName)
+//                                    .WithFileEncoding(Encoding.UTF8);
+//#endif
+
+//                    string script = File.ReadAllText(file);
+//                    CSharpScript.RunAsync(script, scriptOptions).Wait();
+//                }
+//                catch (Exception ex)
+//                {
+//                    Output.WriteLine($"Error compiling script: {file}  Error: {ex.Message}");
+//                }
+//            }
+//        }
+
+        public static bool ConfirmAction(string prompt)
         {
-            mIsRunning = false;
-            mIsRestarting = true;
-            Console.Clear();
+            return true;
+            //Instance.Output.Write(prompt);
+
+            //while (true)
+            //{
+            //    string response = Console.ReadLine().Trim().ToUpper();
+            //    if (response == "YES" || response == "Y")
+            //    {
+            //        return true;
+            //    }
+            //    else if (response == "NO" || response == "N")
+            //    {
+            //        return false;
+            //    }
+            //    else
+            //    {
+            //        Instance.Output.Write("Please answer yes or no.> ");
+            //    }
+            //}
         }
 
-        public void Quit() => mIsRunning = false;
-        
-        private void LoadScripts() 
-        {
-            foreach (string file in Directory.EnumerateFiles(ScriptDirectory, ScriptFileExtension)) 
-            {
-                try 
-                {
-                    var scriptOptions = ScriptOptions.Default.AddReferences(Assembly.GetExecutingAssembly());
-#if DEBUG
-                    scriptOptions = scriptOptions.WithEmitDebugInformation(true)
-                        .WithFilePath(new FileInfo(file).FullName)
-                        .WithFileEncoding(Encoding.UTF8);
-#endif
-
-                    string script = File.ReadAllText(file);
-                    CSharpScript.RunAsync(script, scriptOptions).Wait();
-                }
-                catch (Exception ex) 
-                {
-                    Console.WriteLine($"Error compiling script: {file} Error: {ex.Message}");
-                }
-            }
-        }
-
-        public bool ConfirmAction(string prompt) 
-        {
-            Console.Write(prompt);
-
-            while (true) 
-            {
-                string response = Console.ReadLine().Trim().ToUpper();
-                if (response == "YES" || response == "Y")
-                {
-                    return true;
-                }
-                else if (response == "NO" || response == "N")
-                {
-                    return false;
-                }
-                else 
-                {
-                    Console.Write("Please answer yes of no.> ");
-                }
-            }
-        }
-
-        public static Game Load(string filename)
-        {
-            Game game = JsonConvert.DeserializeObject<Game>(File.ReadAllText(filename));
-            game.Player = game.World.SpawnPlayer();
-
-            return game;
-        }
-
-        private void DisplayWelcomeMessage() => Console.WriteLine(WelcomeMessage);
+        private void DisplayWelcomeMessage() => Output.WriteLine(WelcomeMessage);
 
         public static readonly Random Random = new Random();
-        private static readonly string ScriptDirectory = "Scripts";
-        private static readonly string ScriptFileExtension = "*.csx";
+        //private static readonly string ScriptDirectory = "Scripts";
+        //private static readonly string ScriptFileExtension = "*.csx";
 
-        [JsonProperty]
-        private string WelcomeMessage = null;
-
-        private bool mIsRunning;
         private bool mIsRestarting;
     }
 }
