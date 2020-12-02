@@ -6,6 +6,9 @@ namespace Zork
     public static class RewardCommand
     {
         [Command("REWARD", new string[] { "REWARD", "R" })]
-        public static void Reward(Game game, CommandContext commandContext) => Game.Instance.Player.Score += 5;
+        public static void Reward(Game game, CommandContext commandContext)
+        {
+            Game.Instance.Player.Score += 5;
+        }
     }
 }

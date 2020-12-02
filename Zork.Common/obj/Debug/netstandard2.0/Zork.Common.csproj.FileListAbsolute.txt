@@ -20,4 +20,3 @@ D:\Documents\C-Sharp\Zork\Zork.Unity\Assets\netstandard2.0\Zork.Common.deps.json
 D:\Documents\C-Sharp\Zork\Zork.Unity\Assets\netstandard2.0\Zork.Common.dll
 D:\Documents\C-Sharp\Zork\Zork.Unity\Assets\netstandard2.0\Zork.Common.pdb
 D:\Documents\C-Sharp\Zork\Zork.Common\obj\Debug\netstandard2.0\Zork.Common.csproj.Fody.CopyLocal.cache
-D:\Documents\C-Sharp\Zork\Zork.Common\obj\Debug\netstandard2.0\Zork.Common.csprojAssemblyReference.cache
